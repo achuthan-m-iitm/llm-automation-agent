@@ -1,17 +1,29 @@
 from flask import Flask, request, jsonify
 import os
 from datetime import datetime
-
+from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
+from tasks.phase_a import format_file_with_prettier
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
 
 @app.route('/run', methods=['POST'])
 def run_task():
     task_description = request.args.get('task', '')
+    print(f"Received task description: {task_description}")  # Debugging line
     if not task_description:
         return jsonify({"error": "Task description missing"}), 400
 
-    # Check if the task is "Count Wednesdays"
+    # Task A1: Install 'uv' and run 'datagen.py'
+    if "install uv and run datagen" in task_description.lower():
+        user_email = "22f3002867@ds.study.iitm.ac.in"  
+        return jsonify(*install_uv_and_run_datagen(user_email))
+    
+     # Task A2: Format file with Prettier
+    if "format file with prettier" in task_description.lower():
+        file_path = os.path.join(DATA_DIRECTORY, "format.md")
+        return jsonify(*format_file_with_prettier(file_path))
+
+    # Task A3: Count Wednesdays
     if "wednesdays" in task_description.lower():
         input_file = os.path.join(DATA_DIRECTORY, "dates.txt")
         output_file = os.path.join(DATA_DIRECTORY, "dates-wednesdays.txt")
@@ -26,6 +38,7 @@ def run_task():
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Task not recognized"}), 400
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
