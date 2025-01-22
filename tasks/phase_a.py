@@ -138,3 +138,31 @@ def extract_recent_logs(input_dir, output_file, count=10):
 
     except Exception as e:
         return {"error": str(e)}, 500
+    
+def extract_markdown_titles_recursive(input_dir, output_file):
+    """
+    Recursively extracts the first header line from each Markdown file in the input directory
+    (including subdirectories) and creates an index JSON file mapping filenames to titles.
+    """
+    try:
+        # Step 1: Find all `.md` files in the directory and subdirectories
+        docs_dir = Path(input_dir)
+        md_files = list(docs_dir.rglob("*.md"))  # rglob() searches recursively
+
+        # Step 2: Extract the first header line from each file
+        index = {}
+        for file in md_files:
+            with open(file, 'r') as f:
+                for line in f:
+                    if line.startswith("#"):
+                        index[str(file.relative_to(docs_dir))] = line.strip("#").strip()
+                        break
+
+        # Step 3: Write the index to the output JSON file
+        with open(output_file, 'w') as f:
+            json.dump(index, f, indent=4)
+
+        return {"message": f"Index created with {len(index)} entries"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500

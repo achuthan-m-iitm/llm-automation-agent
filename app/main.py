@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
 from tasks.phase_a import format_file_with_prettier
-from tasks.phase_a import sort_contacts,extract_recent_logs
+from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
 
@@ -47,6 +47,11 @@ def run_task():
         input_dir = os.path.join(DATA_DIRECTORY, "logs")
         output_file = os.path.join(DATA_DIRECTORY, "logs-recent.txt")
         return jsonify(*extract_recent_logs(input_dir, output_file))
+    
+    if "extract markdown titles" in task_description.lower():
+        input_dir = os.path.join(DATA_DIRECTORY, "docs")
+        output_file = os.path.join(DATA_DIRECTORY, "docs/index.json")
+        return jsonify(*extract_markdown_titles_recursive(input_dir, output_file))
 
     return jsonify({"error": "Task not recognized"}), 400
 
