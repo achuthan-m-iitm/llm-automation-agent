@@ -3,6 +3,8 @@ import subprocess
 import sys
 import os
 import requests
+import json
+from pathlib import Path
 
 def count_wednesdays(input_file, output_file):
     """
@@ -83,5 +85,56 @@ def format_file_with_prettier(file_path):
 
     except subprocess.CalledProcessError as e:
         return {"error": f"Prettier execution failed: {e}"}, 500
+    except Exception as e:
+        return {"error": str(e)}, 500
+    
+def sort_contacts(input_file, output_file):
+    """
+    Sorts contacts in the input JSON file by last_name and first_name,
+    then writes the sorted contacts to the output JSON file.
+    """
+    try:
+        # Read the input JSON file
+        with open(input_file, 'r') as f:
+            contacts = json.load(f)
+
+        # Sort contacts by last_name, then by first_name
+        sorted_contacts = sorted(contacts, key=lambda x: (x['last_name'], x['first_name']))
+
+        # Write the sorted contacts to the output JSON file
+        with open(output_file, 'w') as f:
+            json.dump(sorted_contacts, f, indent=4)
+
+        return {"message": f"Contacts sorted and saved to {output_file}"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+    
+def extract_recent_logs(input_dir, output_file, count=10):
+    """
+    Finds the most recent `.log` files in the specified directory,
+    extracts the first line from each, and writes them to the output file.
+    """
+    try:
+        # Step 1: List all `.log` files in the directory
+        log_dir = Path(input_dir)
+        log_files = [file for file in log_dir.glob("*.log") if file.is_file()]
+
+        # Step 2: Sort files by modification time (newest first)
+        sorted_files = sorted(log_files, key=lambda x: x.stat().st_mtime, reverse=True)
+
+        # Step 3: Extract the first line from the top `count` files
+        first_lines = []
+        for file in sorted_files[:count]:
+            with open(file, 'r') as f:
+                first_line = f.readline().strip()
+                first_lines.append(first_line)
+
+        # Step 4: Write the collected first lines to the output file
+        with open(output_file, 'w') as f:
+            f.write("\n".join(first_lines))
+
+        return {"message": f"Extracted first lines from {len(first_lines)} log files"}, 200
+
     except Exception as e:
         return {"error": str(e)}, 500

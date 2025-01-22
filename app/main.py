@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
 from tasks.phase_a import format_file_with_prettier
+from tasks.phase_a import sort_contacts,extract_recent_logs
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
 
@@ -36,8 +37,20 @@ def run_task():
             return jsonify({"message": f"Wednesdays counted: {wednesday_count}"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+        #A4
+    if "sort contacts" in task_description.lower():
+        input_file = os.path.join(DATA_DIRECTORY, "contacts.json")
+        output_file = os.path.join(DATA_DIRECTORY, "contacts-sorted.json")
+        return jsonify(*sort_contacts(input_file, output_file))
+        #A5
+    if "extract recent logs" in task_description.lower():
+        input_dir = os.path.join(DATA_DIRECTORY, "logs")
+        output_file = os.path.join(DATA_DIRECTORY, "logs-recent.txt")
+        return jsonify(*extract_recent_logs(input_dir, output_file))
 
     return jsonify({"error": "Task not recognized"}), 400
+
+    
 
 
 if __name__ == '__main__':
