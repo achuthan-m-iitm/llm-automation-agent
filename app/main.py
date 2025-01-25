@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
-from tasks.phase_a import format_file_with_prettier,extract_credit_card_number,find_most_similar_comments
+from tasks.phase_a import format_file_with_prettier,extract_credit_card_number,find_most_similar_comments,calculate_gold_ticket_sales
 from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive,extract_email_from_file
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -71,6 +71,11 @@ def run_task():
         input_file = "./data/comments.txt"
         output_file = "./data/comments-similar.txt"
         return find_most_similar_comments(input_file, output_file)
+    
+    if "gold ticket sales" in task_description:
+        db_path = "./data/ticket-sales.db"
+        output_file = "./data/ticket-sales-gold.txt"
+        return calculate_gold_ticket_sales(db_path, output_file)
     
     return jsonify({"error": "Task not recognized"}), 400
 

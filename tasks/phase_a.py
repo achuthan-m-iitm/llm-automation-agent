@@ -11,6 +11,7 @@ import pytesseract
 from PIL import Image
 import re
 import numpy as np
+import sqlite3
 from sklearn.metrics.pairwise import cosine_similarity
 # Set your AIPROXY token
 openai.api_key = os.environ.get("AIPROXY_TOKEN")
@@ -326,6 +327,45 @@ def find_most_similar_comments(input_file, output_file):
             return {"message": "Most similar comments found and written successfully"}, 200
         else:
             return {"error": "No similar comments found."}, 500
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+def calculate_gold_ticket_sales(db_path, output_file):
+    """
+    Calculates the total sales for the "Gold" ticket type and writes the result to a file.
+    """
+    try:
+        # Step 1: Connect to the SQLite database
+        if not os.path.exists(db_path):
+            return {"error": "Database file not found"}, 404
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Step 2: Query the total sales for the "Gold" ticket type
+        query = """
+        SELECT SUM(units * price) AS total_sales
+        FROM tickets
+        WHERE type = 'Gold';
+        """
+        cursor.execute(query)
+        result = cursor.fetchone()
+
+        # Step 3: Check the result
+        if result and result[0] is not None:
+            total_sales = result[0]
+        else:
+            total_sales = 0
+
+        # Step 4: Write the total sales to the output file
+        with open(output_file, 'w') as f:
+            f.write(str(total_sales))
+
+        # Step 5: Close the database connection
+        conn.close()
+
+        return {"message": "Gold ticket sales calculated successfully"}, 200
 
     except Exception as e:
         return {"error": str(e)}, 500
