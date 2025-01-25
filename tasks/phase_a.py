@@ -7,6 +7,9 @@ import json
 import openai
 import re
 from pathlib import Path
+import pytesseract
+from PIL import Image
+import re
 # Set your AIPROXY token
 openai.api_key = os.environ.get("AIPROXY_TOKEN")
 
@@ -219,3 +222,53 @@ def extract_email_from_file(input_file, output_file):
 
     except Exception as e:
         return {"error": str(e)}, 500
+
+def extract_credit_card_number(input_image, output_file):
+    """
+    Extracts the credit card number from an image using OCR and LLM.
+    """
+    try:
+        # Step 1: Use OCR to extract text from the image
+        text_from_image = pytesseract.image_to_string(Image.open(input_image))
+        print("OCR Result:", text_from_image)  # Debugging print
+
+        if not text_from_image.strip():
+            return {"error": "No text found in the image"}, 400
+
+        # Step 2: Use the LLM to extract the credit card number
+        messages = [
+            {"role": "system", "content": "You are an assistant that extracts credit card numbers from text."},
+            {"role": "user", "content": f"Extract the credit card number from this text:\n\n{text_from_image}\n\nOnly return the 15 or 16-digit credit card number, without any extra text."}
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=50,
+            temperature=0
+        )
+
+        # Extract the AI response
+        response_text = response['choices'][0]['message']['content'].strip()
+        print("AI Response Text:", response_text)  # Debugging print
+
+        # Step 3: Use regex to extract the credit card number
+        card_number_match = re.search(r'\b\d{4}([- ]?\d{4}){2}([- ]?\d{3,4})?\b', response_text)
+        print("Regex Match Object:", card_number_match)  # Debugging print
+        if card_number_match:
+            # Clean the credit card number (remove spaces or dashes)
+            card_number = card_number_match.group(0).replace(" ", "").replace("-", "")
+            print("Extracted Credit Card Number:", card_number)  # Debugging print
+        else:
+            card_number = "No valid credit card number found."
+
+        # Step 4: Write the extracted credit card number to the output file
+        print("Output file path:", output_file)  # Debugging print
+        with open(output_file, 'w') as f:
+            print("Writing to file:", card_number)  # Debugging print
+            f.write(card_number)
+
+        return {"message": "Credit card number extracted successfully"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+

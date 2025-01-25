@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
-from tasks.phase_a import format_file_with_prettier
+from tasks.phase_a import format_file_with_prettier,extract_credit_card_number
 from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive,extract_email_from_file
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -59,6 +59,12 @@ def run_task():
         input_file = os.path.join(DATA_DIRECTORY, "email.txt")
         output_file = os.path.join(DATA_DIRECTORY, "email-sender.txt")
         return jsonify(*extract_email_from_file(input_file, output_file))
+    
+    if "extract credit card" in task_description.lower():
+        print("Task recognized: Extract credit card")  # Debugging print
+        input_image = "./data/credit_card.png"
+        output_file = "./data/credit-card.txt"
+        return extract_credit_card_number(input_image, output_file)
 
     return jsonify({"error": "Task not recognized"}), 400
 
