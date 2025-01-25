@@ -10,6 +10,8 @@ from pathlib import Path
 import pytesseract
 from PIL import Image
 import re
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 # Set your AIPROXY token
 openai.api_key = os.environ.get("AIPROXY_TOKEN")
 
@@ -272,3 +274,58 @@ def extract_credit_card_number(input_image, output_file):
     except Exception as e:
         return {"error": str(e)}, 500
 
+def get_embeddings(texts):
+    """
+    Get embeddings for a list of texts using the supported embedding model.
+    """
+    response = openai.Embedding.create(
+        model="text-embedding-3-small",  # Correct model
+        input=texts
+    )
+    embeddings = [embedding['embedding'] for embedding in response['data']]
+    return embeddings
+
+def find_most_similar_comments(input_file, output_file):
+    """
+    Finds the most similar pair of comments using embeddings and writes to the output file.
+    """
+    try:
+        # Step 1: Read the comments from the input file
+        with open(input_file, 'r') as f:
+            comments = f.readlines()
+
+        comments = [comment.strip() for comment in comments if comment.strip()]
+
+        if len(comments) < 2:
+            return {"error": "Not enough comments to compare."}, 400
+
+        # Step 2: Get embeddings for each comment
+        embeddings = get_embeddings(comments)
+
+        # Step 3: Calculate cosine similarity between all pairs of comments
+        similarity_matrix = cosine_similarity(embeddings)
+
+        # Step 4: Find the most similar pair (excluding diagonal)
+        max_similarity = -1
+        most_similar_pair = None
+
+        for i in range(len(comments)):
+            for j in range(i + 1, len(comments)):
+                similarity = similarity_matrix[i][j]
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    most_similar_pair = (comments[i], comments[j], similarity)
+
+        # Step 5: Write the most similar pair to the output file
+        if most_similar_pair:
+            with open(output_file, 'w') as f:
+                f.write(f"Comment 1: {most_similar_pair[0]}\n")
+                f.write(f"Comment 2: {most_similar_pair[1]}\n")
+                f.write(f"Similarity: {most_similar_pair[2]:.4f}\n")
+
+            return {"message": "Most similar comments found and written successfully"}, 200
+        else:
+            return {"error": "No similar comments found."}, 500
+
+    except Exception as e:
+        return {"error": str(e)}, 500

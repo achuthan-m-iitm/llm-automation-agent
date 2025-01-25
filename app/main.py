@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
-from tasks.phase_a import format_file_with_prettier,extract_credit_card_number
+from tasks.phase_a import format_file_with_prettier,extract_credit_card_number,find_most_similar_comments
 from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive,extract_email_from_file
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -66,10 +66,13 @@ def run_task():
         output_file = "./data/credit-card.txt"
         return extract_credit_card_number(input_image, output_file)
 
-    return jsonify({"error": "Task not recognized"}), 400
-
     
-
+    if "comments similar" in task_description:
+        input_file = "./data/comments.txt"
+        output_file = "./data/comments-similar.txt"
+        return find_most_similar_comments(input_file, output_file)
+    
+    return jsonify({"error": "Task not recognized"}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
