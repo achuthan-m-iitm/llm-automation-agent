@@ -1,11 +1,32 @@
 from flask import Flask, request, jsonify
 import os
 from datetime import datetime
-from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
-from tasks.phase_a import format_file_with_prettier,extract_credit_card_number,find_most_similar_comments,calculate_gold_ticket_sales
-from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive,extract_email_from_file
+from tasks.phase_a import (
+    install_uv_and_run_datagen,
+    format_file_with_prettier,
+    extract_credit_card_number,
+    find_most_similar_comments,
+    calculate_gold_ticket_sales,
+    sort_contacts,
+    extract_recent_logs,
+    extract_markdown_titles_recursive,
+    extract_email_from_file,
+
+    
+)
+from tasks.phase_b import fetch_api_data,clone_and_commit
+
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
+
+def is_valid_path(path):
+    """
+    Checks if the given path is within the /data directory.
+    """
+    data_dir = os.path.abspath(DATA_DIRECTORY)
+    absolute_path = os.path.abspath(path)
+
+    return absolute_path.startswith(data_dir)
 
 @app.route('/run', methods=['POST'])
 def run_task():
@@ -16,18 +37,22 @@ def run_task():
 
     # Task A1: Install 'uv' and run 'datagen.py'
     if "install uv and run datagen" in task_description.lower():
-        user_email = "22f3002867@ds.study.iitm.ac.in"  
+        user_email = "22f3002867@ds.study.iitm.ac.in"
         return jsonify(*install_uv_and_run_datagen(user_email))
-    
-     # Task A2: Format file with Prettier
+
+    # Task A2: Format file with Prettier
     if "format file with prettier" in task_description.lower():
         file_path = os.path.join(DATA_DIRECTORY, "format.md")
+        if not is_valid_path(file_path):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*format_file_with_prettier(file_path))
 
     # Task A3: Count Wednesdays
     if "wednesdays" in task_description.lower():
         input_file = os.path.join(DATA_DIRECTORY, "dates.txt")
         output_file = os.path.join(DATA_DIRECTORY, "dates-wednesdays.txt")
+        if not is_valid_path(input_file) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         try:
             with open(input_file, 'r') as f:
                 dates = [datetime.strptime(line.strip(), '%Y-%m-%d') for line in f]
@@ -37,46 +62,75 @@ def run_task():
             return jsonify({"message": f"Wednesdays counted: {wednesday_count}"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-        #A4
+
+    # Task A4: Sort contacts
     if "sort contacts" in task_description.lower():
         input_file = os.path.join(DATA_DIRECTORY, "contacts.json")
         output_file = os.path.join(DATA_DIRECTORY, "contacts-sorted.json")
+        if not is_valid_path(input_file) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*sort_contacts(input_file, output_file))
-        #A5
+
+    # Task A5: Extract recent logs
     if "extract recent logs" in task_description.lower():
         input_dir = os.path.join(DATA_DIRECTORY, "logs")
         output_file = os.path.join(DATA_DIRECTORY, "logs-recent.txt")
+        if not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*extract_recent_logs(input_dir, output_file))
-    
+
+    # Task A6: Extract markdown titles
     if "extract markdown titles" in task_description.lower():
         input_dir = os.path.join(DATA_DIRECTORY, "docs")
         output_file = os.path.join(DATA_DIRECTORY, "docs/index.json")
+        if not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*extract_markdown_titles_recursive(input_dir, output_file))
-    
+
+    # Task A7: Extract email
     if "extract email" in task_description.lower():
-        print("Environment Variables:", os.environ)
-        print("AIPROXY_TOKEN:", os.environ.get("AIPROXY_TOKEN"))
         input_file = os.path.join(DATA_DIRECTORY, "email.txt")
         output_file = os.path.join(DATA_DIRECTORY, "email-sender.txt")
+        if not is_valid_path(input_file) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*extract_email_from_file(input_file, output_file))
-    
-    if "extract credit card" in task_description.lower():
-        print("Task recognized: Extract credit card")  # Debugging print
-        input_image = "./data/credit_card.png"
-        output_file = "./data/credit-card.txt"
-        return extract_credit_card_number(input_image, output_file)
 
+    # Task A8: Extract credit card
+    if "extract credit card" in task_description.lower():
+        input_image = os.path.join(DATA_DIRECTORY, "credit_card.png")
+        output_file = os.path.join(DATA_DIRECTORY, "credit-card.txt")
+        if not is_valid_path(input_image) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
+        return jsonify(*extract_credit_card_number(input_image, output_file))
+
+    # Task A9: Find most similar comments
+    if "comments similar" in task_description.lower():
+        input_file = os.path.join(DATA_DIRECTORY, "comments.txt")
+        output_file = os.path.join(DATA_DIRECTORY, "comments-similar.txt")
+        if not is_valid_path(input_file) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
+        return jsonify(*find_most_similar_comments(input_file, output_file))
+
+    # Task A10: Calculate gold ticket sales
+    if "gold ticket sales" in task_description.lower():
+        db_path = os.path.join(DATA_DIRECTORY, "ticket-sales.db")
+        output_file = os.path.join(DATA_DIRECTORY, "ticket-sales-gold.txt")
+        if not is_valid_path(db_path) or not is_valid_path(output_file):
+            return jsonify({"error": "Access to the specified path is not allowed"}), 403
+        return jsonify(*calculate_gold_ticket_sales(db_path, output_file))
     
-    if "comments similar" in task_description:
-        input_file = "./data/comments.txt"
-        output_file = "./data/comments-similar.txt"
-        return find_most_similar_comments(input_file, output_file)
-    
-    if "gold ticket sales" in task_description:
-        db_path = "./data/ticket-sales.db"
-        output_file = "./data/ticket-sales-gold.txt"
-        return calculate_gold_ticket_sales(db_path, output_file)
-    
+    # Task B3: Fetch data from an API
+    if "fetch api data" in task_description:
+        api_url = "https://jsonplaceholder.typicode.com/todos"  # Example API URL
+        output_file = os.path.join(DATA_DIRECTORY, "api-data.json")
+        return jsonify(*fetch_api_data(api_url, output_file))
+
+    if "clone git repo and commit" in task_description:
+        repo_url = request.args.get('repo_url', '')
+        file_name = request.args.get('file_name', 'README.md')
+        commit_message = request.args.get('commit_message', 'Automated commit')
+        return jsonify(*clone_and_commit(repo_url, file_name, commit_message))
+
     return jsonify({"error": "Task not recognized"}), 400
 
 if __name__ == '__main__':
