@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from tasks.phase_a import install_uv_and_run_datagen  # Import for Task A1
 from tasks.phase_a import format_file_with_prettier
-from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive
+from tasks.phase_a import sort_contacts,extract_recent_logs,extract_markdown_titles_recursive,extract_email_from_file
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
 
@@ -52,6 +52,13 @@ def run_task():
         input_dir = os.path.join(DATA_DIRECTORY, "docs")
         output_file = os.path.join(DATA_DIRECTORY, "docs/index.json")
         return jsonify(*extract_markdown_titles_recursive(input_dir, output_file))
+    
+    if "extract email" in task_description.lower():
+        print("Environment Variables:", os.environ)
+        print("AIPROXY_TOKEN:", os.environ.get("AIPROXY_TOKEN"))
+        input_file = os.path.join(DATA_DIRECTORY, "email.txt")
+        output_file = os.path.join(DATA_DIRECTORY, "email-sender.txt")
+        return jsonify(*extract_email_from_file(input_file, output_file))
 
     return jsonify({"error": "Task not recognized"}), 400
 

@@ -4,8 +4,14 @@ import sys
 import os
 import requests
 import json
+import openai
+import re
 from pathlib import Path
+# Set your AIPROXY token
+openai.api_key = os.environ.get("AIPROXY_TOKEN")
 
+# Configure the OpenAI client to use the AIPROXY server
+openai.api_base = "https://aiproxy.sanand.workers.dev/openai/v1"
 def count_wednesdays(input_file, output_file):
     """
     Counts the number of Wednesdays in the given input file
@@ -163,6 +169,53 @@ def extract_markdown_titles_recursive(input_dir, output_file):
             json.dump(index, f, indent=4)
 
         return {"message": f"Index created with {len(index)} entries"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+def extract_email_from_file(input_file, output_file):
+    """
+    Extracts the sender's email address from a file using an LLM.
+    """
+    try:
+        # Ensure the AI proxy token is set
+        api_token = os.environ.get("AIPROXY_TOKEN")
+        if not api_token:
+            return {"error": "AIPROXY_TOKEN not set"}, 500
+
+        openai.api_key = api_token
+
+        # Step 1: Read the content of the input file
+        with open(input_file, 'r') as f:
+            email_content = f.read()
+
+        # Step 2: Use the LLM to extract the email address
+        messages = [
+            {"role": "system", "content": "You are an assistant that extracts only the sender's email address."},
+            {"role": "user", "content": f"Extract the sender's email address from the following content:\n\n{email_content}\n\nReturn only the email address, nothing else."}
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=50,
+            temperature=0  # Deterministic behavior
+        )
+
+        # Extract the response content
+        response_text = response['choices'][0]['message']['content'].strip()
+
+        # Step 3: Use regex to extract only the email address
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', response_text)
+        if email_match:
+            extracted_email = email_match.group(0)
+        else:
+            extracted_email = "No email address found."
+
+        # Step 4: Write the extracted email to the output file
+        with open(output_file, 'w') as f:
+            f.write(extracted_email)
+
+        return {"message": "Email address extracted successfully"}, 200
 
     except Exception as e:
         return {"error": str(e)}, 500
