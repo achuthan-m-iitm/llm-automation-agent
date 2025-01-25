@@ -14,7 +14,7 @@ from tasks.phase_a import (
 
     
 )
-from tasks.phase_b import fetch_api_data,clone_and_commit
+from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image
 
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -130,6 +130,27 @@ def run_task():
         file_name = request.args.get('file_name', 'README.md')
         commit_message = request.args.get('commit_message', 'Automated commit')
         return jsonify(*clone_and_commit(repo_url, file_name, commit_message))
+    
+    if "run sql query" in task_description:
+        db_path = os.path.join(DATA_DIRECTORY, "database.db")
+        query = request.args.get('query', '')
+        output_file = os.path.join(DATA_DIRECTORY, "query_results.txt")
+        return jsonify(*run_sql_query(db_path, query, output_file))
+    
+     # Task B6: Extract Data from a Website
+    if "extract data from website" in task_description:
+        url = request.args.get('url', '')
+        output_file = os.path.join(DATA_DIRECTORY, "website_data.json")
+        return jsonify(*extract_data_from_website(url, output_file))
+
+    # Task B7: Compress or Resize an Image
+    if "compress or resize image" in task_description:
+        input_image = os.path.join(DATA_DIRECTORY, "input_image.jpg")
+        output_image = os.path.join(DATA_DIRECTORY, "output_image.jpg")
+        width = int(request.args.get('width', 0)) or None
+        height = int(request.args.get('height', 0)) or None
+        quality = int(request.args.get('quality', 85))
+        return jsonify(*compress_or_resize_image(input_image, output_image, width, height, quality))
 
     return jsonify({"error": "Task not recognized"}), 400
 
