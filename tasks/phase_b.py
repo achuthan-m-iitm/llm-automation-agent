@@ -9,6 +9,7 @@ from tasks.phase_a import is_valid_path
 from bs4 import BeautifulSoup
 import whisper
 import markdown
+import csv
 def fetch_api_data(api_url, output_file):
     """
     Fetches data from the given API URL and saves it to a file in JSON format.
@@ -229,6 +230,27 @@ def convert_markdown_to_html(input_file, output_file):
 
     except Exception as e:
         return {"error": str(e)}, 500
+    
+
+def filter_csv_data(input_file, column_name, filter_value):
+    """
+    Filters a CSV file based on a given column and value.
+    """
+    try:
+        # Validate file path
+        if not is_valid_path(input_file):
+            return {"error": "Access to the specified path is not allowed"}, 403
+
+        # Read and filter CSV data
+        with open(input_file, 'r', encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            filtered_rows = [row for row in reader if row.get(column_name) == filter_value]
+
+        return {"filtered_data": filtered_rows}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+
 
 
 

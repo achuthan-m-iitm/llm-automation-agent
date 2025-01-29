@@ -14,7 +14,7 @@ from tasks.phase_a import (
 
     
 )
-from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image,transcribe_audio,convert_markdown_to_html
+from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image,transcribe_audio,convert_markdown_to_html,filter_csv_data
 
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -162,8 +162,19 @@ def run_task():
         input_file = os.path.join(DATA_DIRECTORY, "docs/sample.md")
         output_file = os.path.join(DATA_DIRECTORY, "docs/sample.html")
         return jsonify(*convert_markdown_to_html(input_file, output_file))
+    
+    if "filter csv" in task_description.lower():
+        column_name = request.args.get('column', '')
+        filter_value = request.args.get('value', '')
+        input_file = os.path.join(DATA_DIRECTORY, "sample.csv")
+
+        if not column_name or not filter_value:
+            return jsonify({"error": "Missing column or value parameters"}), 400
+        return jsonify(*filter_csv_data(input_file, column_name, filter_value))
 
     return jsonify({"error": "Task not recognized"}), 400
+
+    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
