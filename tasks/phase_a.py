@@ -13,6 +13,8 @@ import re
 import numpy as np
 import sqlite3
 from sklearn.metrics.pairwise import cosine_similarity
+from datetime import datetime
+import os
 # Set your AIPROXY token
 openai.api_key = os.environ.get("AIPROXY_TOKEN")
 DATA_DIRECTORY = "./data"
@@ -26,20 +28,60 @@ def is_valid_path(path):
     absolute_path = os.path.abspath(path)
     return absolute_path.startswith(data_dir)
 
+# Define possible date formats
+DATE_FORMATS = [
+    "%Y-%m-%d",         # 2011-06-13
+    "%d-%b-%Y",         # 03-Aug-2024
+    "%b %d, %Y",        # Aug 03, 2024
+    "%Y/%m/%d %H:%M:%S",  # 2017/05/09 09:07:55
+    "%Y/%m/%d",         # 2022/03/06
+]
+
+def parse_date(date_str):
+    """Tries different formats to parse a date string."""
+    for fmt in DATE_FORMATS:
+        try:
+            return datetime.strptime(date_str, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None  # Return None if no format matched
+
 def count_wednesdays(input_file, output_file):
+    """
+    Cleans the dates, standardizes formats, counts Wednesdays, and saves the cleaned data.
+    """
     try:
-        if not is_valid_path(input_file) or not is_valid_path(output_file):
-            return {"error": "Access to the specified path is not allowed"}, 403
+        if not os.path.exists(input_file):
+            return {"error": f"File {input_file} not found"}, 404
 
-        with open(input_file, 'r') as f:
-            dates = [datetime.strptime(line.strip(), '%Y-%m-%d') for line in f]
+        # Read and clean dates
+        cleaned_dates = []
+        with open(input_file, "r") as f:
+            for line in f:
+                date_str = line.strip()
+                standardized_date = parse_date(date_str)
+                if standardized_date:
+                    cleaned_dates.append(standardized_date)
 
-        wednesday_count = sum(1 for date in dates if date.weekday() == 2)
+        if not cleaned_dates:
+            return {"error": "No valid dates found in the input file"}, 400
 
-        with open(output_file, 'w') as f:
+        # Count Wednesdays
+        wednesday_count = sum(1 for date in cleaned_dates if datetime.strptime(date, "%Y-%m-%d").weekday() == 2)
+
+        # Save cleaned dates for debugging
+        cleaned_dates_file = "data/dates_cleaned.txt"
+        with open(cleaned_dates_file, "w") as f:
+            f.write("\n".join(cleaned_dates))
+
+        # Write Wednesday count to output file
+        with open(output_file, "w") as f:
             f.write(str(wednesday_count))
 
-        return {"message": f"Wednesdays counted: {wednesday_count}"}, 200
+        return {
+            "message": f"Wednesdays counted: {wednesday_count}",
+            "cleaned_dates_saved_to": cleaned_dates_file
+        }, 200
 
     except Exception as e:
         return {"error": str(e)}, 500

@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from datetime import datetime
 from tasks.phase_a import (
+    count_wednesdays,
     install_uv_and_run_datagen,
     format_file_with_prettier,
     extract_credit_card_number,
@@ -47,21 +48,17 @@ def run_task():
             return jsonify({"error": "Access to the specified path is not allowed"}), 403
         return jsonify(*format_file_with_prettier(file_path))
 
+    
     # Task A3: Count Wednesdays
     if "wednesdays" in task_description.lower():
         input_file = os.path.join(DATA_DIRECTORY, "dates.txt")
         output_file = os.path.join(DATA_DIRECTORY, "dates-wednesdays.txt")
+
         if not is_valid_path(input_file) or not is_valid_path(output_file):
             return jsonify({"error": "Access to the specified path is not allowed"}), 403
-        try:
-            with open(input_file, 'r') as f:
-                dates = [datetime.strptime(line.strip(), '%Y-%m-%d') for line in f]
-            wednesday_count = sum(1 for date in dates if date.weekday() == 2)
-            with open(output_file, 'w') as f:
-                f.write(str(wednesday_count))
-            return jsonify({"message": f"Wednesdays counted: {wednesday_count}"}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+
+        return jsonify(*count_wednesdays(input_file, output_file))
+
 
     # Task A4: Sort contacts
     if "sort contacts" in task_description.lower():
