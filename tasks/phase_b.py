@@ -7,6 +7,8 @@ from pathlib import Path
 from PIL import Image
 from tasks.phase_a import is_valid_path
 from bs4 import BeautifulSoup
+import whisper
+import markdown
 def fetch_api_data(api_url, output_file):
     """
     Fetches data from the given API URL and saves it to a file in JSON format.
@@ -168,6 +170,62 @@ def compress_or_resize_image(input_image, output_image, width=None, height=None,
             img.save(output_image, "JPEG", optimize=True, quality=quality)
 
         return {"message": f"Image processed and saved to {output_image}"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+    
+def transcribe_audio(input_audio, output_file):
+    """
+    Transcribes the given MP3 audio file and saves the transcription to a file.
+    """
+    try:
+        # Validate paths
+        if not is_valid_path(input_audio) or not is_valid_path(output_file):
+            return {"error": "Access to the specified path is not allowed"}, 403
+
+        # Ensure the input audio file exists
+        if not os.path.exists(input_audio):
+            return {"error": "Input audio file not found"}, 404
+
+        # Load the Whisper model
+        model = whisper.load_model("base")
+
+        # Transcribe the audio file
+        result = model.transcribe(input_audio)
+
+        # Extract the transcription text
+        transcription = result["text"]
+
+        # Save the transcription to the output file
+        with open(output_file, 'w') as f:
+            f.write(transcription)
+
+        return {"message": f"Audio transcribed successfully and saved to {output_file}"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+    
+def convert_markdown_to_html(input_file, output_file):
+    """
+    Converts a Markdown (.md) file into an HTML file.
+    """
+    try:
+        # Validate file paths
+        if not is_valid_path(input_file) or not is_valid_path(output_file):
+            return {"error": "Access to the specified path is not allowed"}, 403
+
+        # Read the Markdown content
+        with open(input_file, 'r', encoding="utf-8") as f:
+            md_content = f.read()
+
+        # Convert Markdown to HTML
+        html_content = markdown.markdown(md_content)
+
+        # Save the HTML output
+        with open(output_file, 'w', encoding="utf-8") as f:
+            f.write(html_content)
+
+        return {"message": f"Converted {input_file} to {output_file} successfully"}, 200
 
     except Exception as e:
         return {"error": str(e)}, 500

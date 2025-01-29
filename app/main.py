@@ -14,7 +14,7 @@ from tasks.phase_a import (
 
     
 )
-from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image
+from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image,transcribe_audio,convert_markdown_to_html
 
 app = Flask(__name__)
 DATA_DIRECTORY = "./data"
@@ -151,6 +151,17 @@ def run_task():
         height = int(request.args.get('height', 0)) or None
         quality = int(request.args.get('quality', 85))
         return jsonify(*compress_or_resize_image(input_image, output_image, width, height, quality))
+    
+    # Task B8: Transcribe Audio from an MP3 File
+    if "transcribe audio" in task_description:
+        input_audio = os.path.join(DATA_DIRECTORY, "input_audio.mp3")
+        output_file = os.path.join(DATA_DIRECTORY, "audio_transcription.txt")
+        return jsonify(*transcribe_audio(input_audio, output_file))
+    
+    if "convert markdown" in task_description.lower():
+        input_file = os.path.join(DATA_DIRECTORY, "docs/sample.md")
+        output_file = os.path.join(DATA_DIRECTORY, "docs/sample.html")
+        return jsonify(*convert_markdown_to_html(input_file, output_file))
 
     return jsonify({"error": "Task not recognized"}), 400
 
