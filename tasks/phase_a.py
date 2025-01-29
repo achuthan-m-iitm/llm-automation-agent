@@ -285,7 +285,8 @@ def extract_credit_card_number(input_image, output_file):
         print("AI Response Text:", response_text)  # Debugging print
 
         # Step 3: Use regex to extract the credit card number
-        card_number_match = re.search(r'\b\d{4}([- ]?\d{4}){2}([- ]?\d{3,4})?\b', response_text)
+        card_number_match = re.search(r'\b\d{13,16}\b', response_text)
+
         print("Regex Match Object:", card_number_match)  # Debugging print
         if card_number_match:
             # Clean the credit card number (remove spaces or dashes)
