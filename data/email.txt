@@ -1,7 +1,7 @@
 Delivered-To: barbara78@example.com
 MIME-Version: 1.0
 From: "Jack Richardson" <michelemullen@example.net>
-Date: Sun, 18 Mar 1984 12:35:31 +0000
+Date: Mon, 19 Mar 1984 19:19:30 +0000
 Subject: Should check place picture may market.
 To: "Elaine Williams" <barbara78@example.com>
 Cc: "Lindsay Conway" <marylopez@example.org>, "Daniel Tucker" <wbennett@example.org>, "Joshua Stevens" <brice@example.com>

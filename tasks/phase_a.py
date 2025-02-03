@@ -22,11 +22,24 @@ DATA_DIRECTORY = "./data"
 openai.api_base = "https://aiproxy.sanand.workers.dev/openai/v1"
 def is_valid_path(path):
     """
-    Checks if the given path is within the /data directory.
+    Checks if the given path is within the allowed directory for access.
+    Also checks if the file exists and can be accessed.
     """
-    data_dir = os.path.abspath(DATA_DIRECTORY)
+    data_dir_internal = os.path.abspath(DATA_DIRECTORY)  # Internal data directory
+    data_dir_external = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))  # External data directory
     absolute_path = os.path.abspath(path)
-    return absolute_path.startswith(data_dir)
+
+    # Check if the file or directory exists
+    if not os.path.exists(absolute_path):
+        print(f"DEBUG: Path does not exist: {absolute_path}")
+        return False
+
+    # Allow access to paths within the internal or external data directories
+    if absolute_path.startswith(data_dir_internal) or absolute_path.startswith(data_dir_external):
+        return True
+    else:
+        print(f"DEBUG: Access denied for path {absolute_path}")
+        return False
 
 # Define possible date formats
 DATE_FORMATS = [
@@ -99,7 +112,7 @@ def install_uv_and_run_datagen(user_email):
             except ImportError:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
-        url = "https://raw.githubusercontent.com/sanand0/tools-in-data-science-public/tds-2025-01/datagen.py"
+        url = "https://raw.githubusercontent.com/sanand0/tools-in-data-science-public/tds-2025-01/project-1/datagen.py"
         script_path = os.path.join(DATA_DIRECTORY, "datagen.py")
 
         response = requests.get(url)

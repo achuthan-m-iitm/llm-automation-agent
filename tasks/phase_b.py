@@ -10,6 +10,14 @@ from bs4 import BeautifulSoup
 import whisper
 import markdown
 import csv
+import shutil
+# Get the project root directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Correctly point to the 'data' folder in the project root
+DATA_DIRECTORY = os.path.join(PROJECT_ROOT, 'data')
+REPO_DIR = os.path.join(DATA_DIRECTORY, "repo")
+
 def fetch_api_data(api_url, output_file):
     """
     Fetches data from the given API URL and saves it to a file in JSON format.
@@ -36,34 +44,67 @@ def fetch_api_data(api_url, output_file):
         return {"error": f"API request failed: {str(e)}"}, 500
     except Exception as e:
         return {"error": str(e)}, 500
-    
-def clone_and_commit(repo_url, file_name, commit_message):
-    """
-    Clones a git repository, creates/modifies a file, and makes a commit.
-    """
-    try:
-        # Step 1: Validate paths
-        clone_dir = os.path.join("./data", "repo")
-        if not is_valid_path(clone_dir):
-            return {"error": "Access to the specified path is not allowed"}, 403
 
-        # Step 2: Ensure the /data/repo directory doesn't already exist
-        if os.path.exists(clone_dir):
+
+def clone_and_commit(repo_url, file_name="README.md", commit_message="Automated commit"):
+    """
+    Clones a GitHub repository, modifies a file, and commits & pushes the changes.
+    """
+
+    try:
+        # ✅ Ensure /data directory exists
+        os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+        # ✅ Check if repo already exists
+        if os.path.exists(REPO_DIR):
             return {"error": "Repository directory already exists. Please clean up before retrying."}, 400
 
-        # Step 3: Clone the repository
-        subprocess.check_call(["git", "clone", repo_url, clone_dir])
+        # ✅ Clone the GitHub repository
+        subprocess.run(["git", "clone", repo_url, REPO_DIR], check=True)
 
-        # Step 4: Create or modify the file in the cloned repository
-        file_path = os.path.join(clone_dir, file_name)
-        with open(file_path, "a") as f:
-            f.write("\n# This is an automated change.\n")
+        # ✅ Change directory to repo
+        os.chdir(REPO_DIR)
 
-        # Step 5: Commit the change
-        subprocess.check_call(["git", "-C", clone_dir, "add", file_name])
-        subprocess.check_call(["git", "-C", clone_dir, "commit", "-m", commit_message])
+        # ✅ Modify the file (append a timestamp)
+        with open(file_name, "a") as f:
+            f.write("\nAutomated update\n")
+
+        # ✅ Add, commit, and push the changes
+        subprocess.run(["git", "add", file_name], check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        subprocess.run(["git", "push"], check=True)
 
         return {"message": f"Committed changes to {file_name} in the repository"}, 200
+
+    except subprocess.CalledProcessError as e:
+        return {"error": f"Git operation failed: {str(e)}"}, 500
+    except Exception as e:
+        return {"error": str(e)}, 500
+    finally:
+        # ✅ Change back to original directory
+        os.chdir(os.path.dirname(__file__))
+    
+
+def clone_github_repo():
+    """
+    Clones a GitHub repository into the /data directory. If the repository already exists, it deletes it first.
+    """
+    try:
+        repo_url = "https://github.com/octocat/Hello-World.git"  # Replace with actual repo
+        clone_path = os.path.join(DATA_DIRECTORY, "repo")
+
+        # Ensure the data directory exists
+        os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+        # Remove existing repo before cloning
+        if os.path.exists(clone_path):
+            shutil.rmtree(clone_path)  # Deletes the entire directory
+            print("Existing repository deleted.")
+
+        # Run the git clone command
+        subprocess.check_call(["git", "clone", repo_url, clone_path])
+
+        return {"message": "Repository cloned successfully"}, 200
 
     except subprocess.CalledProcessError as e:
         return {"error": f"Git operation failed: {str(e)}"}, 500
@@ -75,36 +116,39 @@ def run_sql_query(db_path, query, output_file):
     Executes a SQL query on the given database and writes the results to a file.
     """
     try:
-        # Validate paths
+        print(f"DEBUG: Checking paths - DB: {db_path}, Output: {output_file}")  # Log paths
         if not is_valid_path(db_path) or not is_valid_path(output_file):
+            print("DEBUG: Invalid path detected")
             return {"error": "Access to the specified path is not allowed"}, 403
 
-        # Ensure the database file exists
         if not os.path.exists(db_path):
+            print("DEBUG: Database file not found")
             return {"error": "Database file not found"}, 404
 
-        # Connect to the database
+        print(f"DEBUG: Connecting to database {db_path}")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        # Execute the SQL query
+        print(f"DEBUG: Executing query: {query}")
         cursor.execute(query)
         results = cursor.fetchall()
+        print(f"DEBUG: Query results: {results}")
 
-        # Write the results to the output file
+        print(f"DEBUG: Writing results to {output_file}")
         with open(output_file, 'w') as f:
             for row in results:
                 f.write(", ".join(map(str, row)) + "\n")
 
-        # Close the database connection
         conn.close()
-
         return {"message": f"Query executed successfully. Results saved to {output_file}"}, 200
 
     except sqlite3.Error as e:
+        print(f"DEBUG: SQL Error: {str(e)}")
         return {"error": f"SQL error: {str(e)}"}, 500
     except Exception as e:
+        print(f"DEBUG: General Error: {str(e)}")
         return {"error": str(e)}, 500
+
 
 
 

@@ -18,16 +18,14 @@ from tasks.phase_a import (
 from tasks.phase_b import fetch_api_data,clone_and_commit,run_sql_query,extract_data_from_website,compress_or_resize_image,transcribe_audio,convert_markdown_to_html,filter_csv_data
 
 app = Flask(__name__)
-DATA_DIRECTORY = "./data"
+DATA_DIRECTORY = os.path.abspath("./data")
 
 def is_valid_path(path):
-    """
-    Checks if the given path is within the /data directory.
-    """
     data_dir = os.path.abspath(DATA_DIRECTORY)
     absolute_path = os.path.abspath(path)
-
+    print(f"DEBUG: Checking path - {absolute_path} starts with {data_dir}")  # Log for debugging
     return absolute_path.startswith(data_dir)
+
 
 @app.route('/run', methods=['POST'])
 def run_task():
@@ -122,26 +120,29 @@ def run_task():
         output_file = os.path.join(DATA_DIRECTORY, "api-data.json")
         return jsonify(*fetch_api_data(api_url, output_file))
 
-    if "clone git repo and commit" in task_description:
+    if "clone repo" in task_description.lower():
         repo_url = request.args.get('repo_url', '')
         file_name = request.args.get('file_name', 'README.md')
         commit_message = request.args.get('commit_message', 'Automated commit')
         return jsonify(*clone_and_commit(repo_url, file_name, commit_message))
     
-    if "run sql query" in task_description:
+    if "run sql query" in task_description.lower():
         db_path = os.path.join(DATA_DIRECTORY, "database.db")
         query = request.args.get('query', '')
         output_file = os.path.join(DATA_DIRECTORY, "query_results.txt")
+
+        print(f"DEBUG: Received SQL request - Query: {query}, DB Path: {db_path}")
+
         return jsonify(*run_sql_query(db_path, query, output_file))
     
      # Task B6: Extract Data from a Website
-    if "extract data from website" in task_description:
+    if "extract data from website" in task_description.lower():
         url = request.args.get('url', '')
         output_file = os.path.join(DATA_DIRECTORY, "website_data.json")
         return jsonify(*extract_data_from_website(url, output_file))
 
     # Task B7: Compress or Resize an Image
-    if "compress or resize image" in task_description:
+    if "compress or resize image" in task_description.lower():
         input_image = os.path.join(DATA_DIRECTORY, "input_image.jpg")
         output_image = os.path.join(DATA_DIRECTORY, "output_image.jpg")
         width = int(request.args.get('width', 0)) or None
@@ -150,7 +151,7 @@ def run_task():
         return jsonify(*compress_or_resize_image(input_image, output_image, width, height, quality))
     
     # Task B8: Transcribe Audio from an MP3 File
-    if "transcribe audio" in task_description:
+    if "transcribe audio" in task_description.lower():
         input_audio = os.path.join(DATA_DIRECTORY, "input_audio.mp3")
         output_file = os.path.join(DATA_DIRECTORY, "audio_transcription.txt")
         return jsonify(*transcribe_audio(input_audio, output_file))
